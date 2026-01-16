@@ -1,161 +1,187 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>P2P Cryptography Messenger</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: "Segoe UI", Tahoma, sans-serif;
-    }
+<meta charset="UTF-8">
+<title>P2P Crypto Messenger</title>
 
-    body {
-      background: linear-gradient(135deg, #1d2671, #c33764);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0;
-      color: #333;
-    }
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  background: #0b141a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+}
 
-    .card {
-      background: #fff;
-      width: 480px;
-      padding: 25px 30px;
-      border-radius: 14px;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.25);
-    }
+.app {
+  width: 420px;
+  height: 700px;
+  background: #efeae2;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
 
-    h1 {
-      text-align: center;
-      margin-bottom: 5px;
-      color: #1d2671;
-    }
+.header {
+  background: #075e54;
+  color: white;
+  padding: 14px;
+  font-weight: bold;
+  text-align: center;
+}
 
-    p.subtitle {
-      text-align: center;
-      font-size: 14px;
-      color: #666;
-      margin-bottom: 25px;
-    }
+.chat {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-    label {
-      font-weight: 600;
-      margin-top: 15px;
-      display: block;
-    }
+.msg {
+  max-width: 75%;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 14px;
+}
 
-    select, textarea, input {
-      width: 100%;
-      padding: 10px 12px;
-      margin-top: 6px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 14px;
-    }
+.sent {
+  background: #dcf8c6;
+  align-self: flex-end;
+}
 
-    textarea {
-      resize: none;
-      height: 110px;
-    }
+.received {
+  background: white;
+  align-self: flex-start;
+}
 
-    button {
-      width: 100%;
-      margin-top: 22px;
-      padding: 12px;
-      background: linear-gradient(135deg, #1d2671, #c33764);
-      border: none;
-      color: #fff;
-      font-size: 16px;
-      font-weight: bold;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
+.meta {
+  font-size: 11px;
+  color: #555;
+}
 
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.25);
-    }
+.controls {
+  padding: 8px;
+  background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-    .result {
-      margin-top: 20px;
-      background: #f5f5f5;
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 13px;
-      white-space: pre-wrap;
-      max-height: 180px;
-      overflow-y: auto;
-    }
+input, textarea, select, button {
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
 
-    footer {
-      text-align: center;
-      margin-top: 15px;
-      font-size: 12px;
-      color: #888;
-    }
-  </style>
+textarea {
+  height: 60px;
+}
+
+button {
+  background: #075e54;
+  color: white;
+  font-weight: bold;
+}
+</style>
 </head>
 
 <body>
 
-  <div class="card">
-    <h1>🔐 P2P Crypto Messenger</h1>
-    <p class="subtitle">Encrypt & send messages securely</p>
+<div class="app">
+  <div class="header">🔐 P2P Crypto Messenger</div>
 
-    <label for="cipher">Cipher</label>
-    <select id="cipher">
+  <div class="chat" id="chat"></div>
+
+  <div class="controls">
+    <input id="ip" placeholder="Receiver IP">
+    <select id="cipher" onchange="updateKeyPlaceholder()">
       <option value="caesar">Caesar</option>
       <option value="affine">Affine</option>
-      <option value="vigenere">Vigenère</option>
+      <option value="vigenere">Vigenere</option>
       <option value="transposition">Transposition</option>
-      <option value="otp">One-Time Pad</option>
+      <option value="otp">OTP</option>
       <option value="rsa">RSA</option>
     </select>
-
-    <label for="text">Message</label>
-    <textarea id="text" placeholder="Type your message here..."></textarea>
-
-    <label for="key">Key</label>
-    <input id="key" placeholder="Example: 3 | 5,7 | LEMON | e,n">
-
+    <textarea id="text" placeholder="Type a message"></textarea>
+    <input id="key">
     <button onclick="sendMessage()">Encrypt & Send</button>
-
-    <div class="result" id="out">Waiting for message...</div>
-
-    <footer>
-      Network Cryptography Project
-    </footer>
   </div>
+</div>
 
-  <script>
-    function sendMessage() {
-      const cipher = document.getElementById("cipher").value;
-      const text = document.getElementById("text").value;
-      const key = document.getElementById("key").value;
-      const out = document.getElementById("out");
+<script>
+const chat = document.getElementById("chat");
+let lastInboxLength = 0;
 
-      if (!text || !key) {
-        out.textContent = "⚠️ Please enter both message and key.";
-        return;
+function updateKeyPlaceholder() {
+  const c = cipher.value;
+  const k = key;
+  const map = {
+    caesar: "Example: 3",
+    affine: "Example: 5,7",
+    vigenere: "Example: LEMON",
+    transposition: "Example: 4",
+    otp: "Example: XMCKL",
+    rsa: "No key required"
+  };
+  k.placeholder = map[c];
+  k.disabled = (c === "rsa");
+}
+
+function sendMessage() {
+  fetch("/send", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      cipher: cipher.value,
+      text: text.value,
+      key: key.value,
+      ip: ip.value
+    })
+  })
+  .then(r => r.json())
+  .then(d => {
+    const bubble = document.createElement("div");
+    bubble.className = "msg sent";
+    bubble.innerHTML = `
+      <strong>You</strong><br>
+      <div class="meta">Encrypted:</div>${d.encrypted}
+      <div class="meta">Decrypted:</div>${text.value}
+    `;
+    chat.appendChild(bubble);
+    chat.scrollTop = chat.scrollHeight;
+    text.value = "";
+  });
+}
+
+function loadInbox() {
+  fetch("/inbox")
+    .then(r => r.json())
+    .then(data => {
+      for (let i = lastInboxLength; i < data.length; i++) {
+        const m = data[i];
+        const bubble = document.createElement("div");
+        bubble.className = "msg received";
+        bubble.innerHTML = `
+          <strong>${m.from}</strong><br>
+          <div class="meta">Encrypted:</div>${m.encrypted}
+          <div class="meta">Decrypted:</div>${m.decrypted}
+        `;
+        chat.appendChild(bubble);
       }
+      lastInboxLength = data.length;
+      chat.scrollTop = chat.scrollHeight;
+    });
+}
 
-      fetch("/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cipher, text, key })
-      })
-      .then(res => res.json())
-      .then(data => {
-        out.textContent = JSON.stringify(data, null, 2);
-      })
-      .catch(err => {
-        out.textContent = "❌ Error: " + err;
-      });
-    }
-  </script>
+setInterval(loadInbox, 500);
+updateKeyPlaceholder();
+</script>
 
 </body>
 </html>

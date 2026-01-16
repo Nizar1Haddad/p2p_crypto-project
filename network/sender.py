@@ -1,7 +1,7 @@
 import socket
 from crypto.caesar import encrypt
 
-HOST = "192.168.1.42"  # CHANGE to receiver IP
+HOST = "192.168.0.2"  # CHANGE to receiver IP
 PORT = 5005
 
 cipher = "caesar"
