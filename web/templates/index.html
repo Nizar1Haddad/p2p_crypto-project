@@ -7,17 +7,19 @@
 <style>
 body {
   margin: 0;
-  height: 100vh;
+  min-height: 100vh;
   background: #0b141a;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding: 20px 0;
   font-family: Arial, sans-serif;
 }
 
 .app {
   width: 420px;
-  height: 700px;
+  max-width: 95vw;
+  height: calc(100vh - 40px);
   background: #efeae2;
   display: flex;
   flex-direction: column;
@@ -87,6 +89,7 @@ button {
   background: #075e54;
   color: white;
   font-weight: bold;
+  cursor: pointer;
 }
 </style>
 </head>
@@ -94,7 +97,7 @@ button {
 <body>
 
 <div class="app">
-  <div class="header">🔐 P2P Crypto Messenger</div>
+  <div class="header">P2P Crypto Messenger</div>
 
   <div class="chat" id="chat"></div>
 
@@ -117,6 +120,14 @@ button {
 <script>
 const chat = document.getElementById("chat");
 let lastInboxLength = 0;
+let userScrolledUp = false;
+
+// Detect manual scrolling
+chat.addEventListener("scroll", () => {
+  const atBottom =
+    chat.scrollHeight - chat.scrollTop <= chat.clientHeight + 5;
+  userScrolledUp = !atBottom;
+});
 
 function updateKeyPlaceholder() {
   const c = cipher.value;
@@ -131,9 +142,15 @@ function updateKeyPlaceholder() {
   };
   k.placeholder = map[c];
   k.disabled = (c === "rsa");
+  if (c !== "rsa") k.value = "";
 }
 
 function sendMessage() {
+  if (!text.value || !ip.value) {
+    alert("Please enter a message and receiver IP.");
+    return;
+  }
+
   fetch("/send", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
@@ -146,6 +163,11 @@ function sendMessage() {
   })
   .then(r => r.json())
   .then(d => {
+    if (d.error) {
+      alert(d.error);
+      return;
+    }
+
     const bubble = document.createElement("div");
     bubble.className = "msg sent";
     bubble.innerHTML = `
@@ -154,7 +176,11 @@ function sendMessage() {
       <div class="meta">Decrypted:</div>${text.value}
     `;
     chat.appendChild(bubble);
-    chat.scrollTop = chat.scrollHeight;
+
+    setTimeout(() => {
+      chat.scrollTop = chat.scrollHeight;
+    }, 50);
+
     text.value = "";
   });
 }
@@ -163,6 +189,8 @@ function loadInbox() {
   fetch("/inbox")
     .then(r => r.json())
     .then(data => {
+      let newMessages = false;
+
       for (let i = lastInboxLength; i < data.length; i++) {
         const m = data[i];
         const bubble = document.createElement("div");
@@ -173,9 +201,14 @@ function loadInbox() {
           <div class="meta">Decrypted:</div>${m.decrypted}
         `;
         chat.appendChild(bubble);
+        newMessages = true;
       }
+
+      if (newMessages && !userScrolledUp) {
+        chat.scrollTop = chat.scrollHeight;
+      }
+
       lastInboxLength = data.length;
-      chat.scrollTop = chat.scrollHeight;
     });
 }
 
